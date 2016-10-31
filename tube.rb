@@ -48,12 +48,26 @@ class Tube
       send_response env
     end
 
-    def send_response(env)
-      @app.call(env)
+    REASONS = {
+      200 => "OK",
+      404 => "Not found"
+    }
 
-      @socket.write "HTTP/1.1 200 OK\r\n"
+    def send_response(env)
+      status, headers, body = @app.call(env)
+      reason = REASONS[status]
+
+      @socket.write "HTTP/1.1 #{status} #{reason}\r\n"
+      headers.each_pair do |name, value|
+        @socket.write "#{name}: #{value} \r\n"
+      end
+
       @socket.write "\r\n"
-      @socket.write "hello\n"
+
+      body.each do |chunk|
+        @socket.write chunk
+      end
+      body.close if body.respond_to? :close
 
       close
     end
