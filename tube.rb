@@ -20,6 +20,7 @@ class Tube
     def initialize(socket, app)
       @socket = socket
       @parser = Http::Parser.new(self)
+      @app = app
     end
 
     def process
@@ -37,11 +38,11 @@ class Tube
       env = {}
       @parser.headers.each_pair do |name, value|
         # User-Agent => HTTP_USER_AGENT
-        name = "HTTP_" + name.upcase.tre("-", "_")
+        name = "HTTP_" + name.upcase.tr("-", "_")
         env[name] = value
       end
       env["PATH_INFO"] = @parser.request_url
-      env["REQUEST_METHOD"] = @parser.htpp_method
+      env["REQUEST_METHOD"] = @parser.http_method
       env["rack.input"] = StringIO.new
 
       send_response env
