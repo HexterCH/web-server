@@ -1,6 +1,7 @@
 require "socket"
 require "http/parser"
 require "stringio"
+require "thread"
 
 class Tube
   def initialize(port, app)
@@ -8,11 +9,23 @@ class Tube
     @app = app
   end
 
+  def prefork(workers)
+    workers.times do
+      fork do
+        puts "Forked #{Process.pid}"
+        start
+      end
+    end
+    Process.waitall
+  end
+
   def start
     loop do
       socket = @server.accept
-      connection = Connection.new(socket, @app)
-      connection.process
+      Thread.new do
+        connection = Connection.new(socket, @app)
+        connection.process
+      end
     end
   end
 
@@ -96,4 +109,4 @@ end
 app = Tube::Builder.parse_file("config.ru")
 server = Tube.new(3000, app)
 puts "plugging tube inot port 3000"
-server.start
+server.prefork 3
