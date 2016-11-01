@@ -76,22 +76,24 @@ class Tube
       @socket.close
     end
   end
-end
 
-class App
-  def call(env)
-    message = "Hello from the tube.\n"
-    [
-      200,
-      { 'Content-Type' => 'text/plain', 'Content-Length' => message.size.to_s },
-      [message]
-    ]
+  class Builder
+    attr_reader :app
+
+    def run(app)
+      @app = app 
+    end
+
+    def self.parse_file(file)
+      content = File.read(file)
+      builder = self.new
+      builder.instance_eval(content)
+      builder.app
+    end
   end
 end
 
-app = App.new
-
+app = Tube::Builder.parse_file("config.ru")
 server = Tube.new(3000, app)
-
 puts "plugging tube inot port 3000"
 server.start
